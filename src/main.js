@@ -7,11 +7,12 @@ import "@fontsource/ibm-plex-mono/500.css";
 import { clearLabel, idleExpr, initialState, OPS, reduce } from "./calc.js";
 
 const PRO_KEY = "plusonly-pro";
+const PRICE = "$999";
 
 const PITCHES = {
   "−": {
     title: "Subtraction is a paid feeling",
-    copy: "The free plan only goes up. Stepping backward is Pro Math, sold at the price of a compliment.",
+    copy: "The free plan only goes up. Stepping backward is Pro Math, $999.",
   },
   "×": {
     title: "Multiplication is networking",
@@ -35,7 +36,7 @@ const PITCHES = {
   },
   general: {
     title: "The rest of the buttons",
-    copy: "Plus is on the house. Minus, times, divide, percent, powers, and negative numbers are in a glass case. The case opens if you pretend to pay.",
+    copy: "Plus is included. Minus, times, divide, percent, powers, and negative numbers are Pro Math, for $999.",
     symbol: "∞",
   },
 };
@@ -99,6 +100,8 @@ function render() {
   exprEl.textContent = state.expr;
   clearBtn.textContent = clearLabel(state);
   pill.textContent = pro ? "Pro Math" : "Free tier";
+  document.querySelector("#due-price").textContent = PRICE;
+  if (!paying) subscribeBtn.textContent = `Pay ${PRICE}`;
   signBtn.setAttribute("aria-label", pro ? "Toggle sign" : "Toggle sign, locked");
   signBtn.title = pro ? "" : "Included with Pro Math";
 
@@ -240,9 +243,9 @@ function openManage() {
   if (dialog.open) return;
   pendingGate = null;
   showView("manage");
-  titleEl.textContent = "You're subscribed to nothing";
+  titleEl.textContent = "Pro Math is active";
   copyEl.textContent =
-    "This tab can subtract, multiply, divide, take percents, and raise powers. Close it and the free tier returns on its own, like a library book.";
+    "This tab can subtract, multiply, divide, take percents, and raise powers. Downgrade anytime and the free tier returns.";
   symbolEl.textContent = "★";
   dialog.showModal();
   keepBtn.focus();
@@ -282,18 +285,18 @@ subscribeBtn.addEventListener("click", async () => {
   const token = ++payToken;
   paying = true;
   subscribeBtn.disabled = true;
-  statusEl.textContent = "Sliding a napkin through the cardboard reader…";
+  statusEl.textContent = `Charging ${PRICE}…`;
   await wait(700);
   if (token !== payToken || !dialog.open) return;
-  statusEl.textContent = "The reader beeps in a supportive way.";
+  statusEl.textContent = "Authorizing payment…";
   await wait(550);
   if (token !== payToken || !dialog.open) return;
   setPro(true);
   paying = false;
   burst();
   showView("receipt");
-  titleEl.textContent = "Approved, in the fictional sense";
-  copyEl.textContent = "Pro Math is unlocked for this tab. Refreshing keeps it. Closing the tab puts the locks back.";
+  titleEl.textContent = "Payment approved";
+  copyEl.textContent = "Pro Math is unlocked in this tab.";
   symbolEl.textContent = "✓";
   const when = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   receiptBody.textContent = [
@@ -301,13 +304,11 @@ subscribeBtn.addEventListener("click", async () => {
     "------------------------",
     "ITEM      Pro Math",
     "OPS       − × ÷ % ^ ±",
-    "TENDER    imaginary",
-    "TOTAL     $0.00",
+    `TOTAL     ${PRICE}`,
     "STATUS    APPROVED",
     `TIME      ${when}`,
     "------------------------",
-    "Keep this tab open.",
-    "It is the whole subscription.",
+    "Thank you for subscribing.",
   ].join("\n");
   receiptClose.focus();
 });

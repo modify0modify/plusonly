@@ -22,7 +22,7 @@ export function initialState() {
     pendingOp: null,
     overwrite: true,
     error: null,
-    expr: "Addition is complimentary",
+    expr: "Addition is free",
     showResultExpr: false,
   };
 }
@@ -74,7 +74,7 @@ export function clearLabel(state) {
 }
 
 export function idleExpr(pro) {
-  return pro ? "Pro Math · this tab only" : "Addition is complimentary";
+  return pro ? "Pro Math · this tab only" : "Addition is free";
 }
 
 function withExpr(state, pro) {

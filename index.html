@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="PlusOnly is a calculator where addition is free and every other operation is a pretend Pro Math subscription."
+      content="PlusOnly is a calculator where addition is free and every other operation requires Pro Math for $999."
     />
     <meta name="theme-color" content="#e7d3b4" />
     <title>PlusOnly — addition is free</title>
@@ -30,8 +30,7 @@
         <div class="intro-rest">
         <p class="lede">
           PlusOnly is a working calculator with one house rule. The plus key does its job.
-          Every other operation invites you to subscribe to Pro Math, which costs zero dollars
-          and lasts until you close this tab.
+          Every other operation requires Pro Math, a $999 subscription for this tab.
         </p>
         <ul class="legend">
           <li><span class="swatch free"></span> Free: digits, decimal, clear, backspace, +, =</li>
@@ -61,7 +60,7 @@
 
         <div class="screen">
           <div class="screen-meta">
-            <p id="expr" class="expr">Addition is complimentary</p>
+            <p id="expr" class="expr">Addition is free</p>
             <div class="screen-actions">
               <button type="button" class="mini" id="sign" data-event="sign" aria-label="Toggle sign, locked">
                 <span class="lock" aria-hidden="true"></span>
@@ -126,12 +125,10 @@
           <ul class="compare">
             <li><span>Addition</span><b>Included</b></li>
             <li><span id="locked-feature">This button</span><b>Pro Math</b></li>
-            <li><span>Due today</span><b>$0.00</b></li>
+            <li><span>Due today</span><b id="due-price">$999</b></li>
           </ul>
-          <p class="fine">
-            A pretend checkout. It lives in this browser tab, and the price is exactly zero.
-          </p>
-          <button type="button" class="pay-primary" id="subscribe">Pretend to pay $0.00</button>
+          <p class="fine">Pro Math is $999 and unlocks every locked operation in this tab.</p>
+          <button type="button" class="pay-primary" id="subscribe">Pay $999</button>
           <button type="button" class="pay-quiet" id="dismiss">I'll keep adding</button>
           <p id="pay-status" class="status" aria-live="polite"></p>
         </div>
