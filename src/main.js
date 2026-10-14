@@ -7,12 +7,12 @@ import "@fontsource/ibm-plex-mono/500.css";
 import { clearLabel, idleExpr, initialState, OPS, reduce } from "./calc.js";
 
 const PRO_KEY = "plusonly-pro";
-const PRICE = "$999";
+const PRICE = "$999.99";
 
 const PITCHES = {
   "−": {
     title: "Subtraction is a paid feeling",
-    copy: "The free plan only goes up. Stepping backward is Pro Math, $999.",
+    copy: `The free plan only goes up. Stepping backward is Pro Math, ${PRICE}.`,
   },
   "×": {
     title: "Multiplication is networking",
@@ -36,7 +36,7 @@ const PITCHES = {
   },
   general: {
     title: "The rest of the buttons",
-    copy: "Plus is included. Minus, times, divide, percent, powers, and negative numbers are Pro Math, for $999.",
+    copy: `Plus is included. Minus, times, divide, percent, powers, and negative numbers are Pro Math, for ${PRICE}.`,
     symbol: "∞",
   },
 };
