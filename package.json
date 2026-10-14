@@ -1,13 +1,44 @@
 {
   "name": "plusonly",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "electron/main.cjs",
+  "author": "PlusOnly",
+  "description": "A calculator where addition is free and every other key is its own purchase.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node scripts/check.mjs"
+    "test": "node scripts/check.mjs",
+    "desktop": "vite build && electron .",
+    "pack:win": "vite build && electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.plusonly.calculator",
+    "productName": "PlusOnly",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false,
+      "artifactName": "PlusOnly.exe"
+    }
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.2.8",
@@ -15,6 +46,8 @@
     "@fontsource/outfit": "^5.2.8"
   },
   "devDependencies": {
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
     "vite": "^8.3.0"
   }
 }

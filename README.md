@@ -29,3 +29,16 @@ npm test
 ```
 
 That runs the calculator rules without a browser: free addition, a locked key, and a purchase that unlocks only that key.
+
+## Windows app
+
+The Alpha Release is a single `PlusOnly.exe` on [GitHub Releases](https://github.com/modify0modify/plusonly/releases). Download it and run it on 64-bit Windows. The app is unsigned, so Windows may show a SmartScreen warning.
+
+To build that executable yourself:
+
+```bash
+npm install
+npm run pack:win
+```
+
+The file is written to `release/PlusOnly.exe`.
