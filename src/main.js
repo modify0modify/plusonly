@@ -5,6 +5,7 @@ import "@fontsource/outfit/700.css";
 import "@fontsource/fraunces/600.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import { clearLabel, idleExpr, initialState, OPS, reduce } from "./calc.js";
+import { initialSciState, SCI_CONSTS, SCI_FUNCS, sciClearLabel, sciReduce } from "./scientific.js";
 
 const PRO_KEY = "plusonly-pro";
 const PRICE = "$999.99";
@@ -36,7 +37,7 @@ const PITCHES = {
   },
   general: {
     title: "The rest of the buttons",
-    copy: `Plus is included. Minus, times, divide, percent, powers, and negative numbers are Pro Math, for ${PRICE}.`,
+    copy: `Plus is included. Minus, times, divide, percent, powers, negative numbers, and the scientific keys are Pro Math, for ${PRICE}.`,
     symbol: "∞",
   },
 };
@@ -64,9 +65,21 @@ const receiptClose = document.querySelector("#receipt-close");
 const keepBtn = document.querySelector("#keep-pro");
 const downgradeBtn = document.querySelector("#downgrade");
 const sheet = document.querySelector(".sheet");
+const sciPad = document.querySelector("#sci-pad");
+const modelEl = document.querySelector("#model");
+const angleBtn = document.querySelector("#angle");
+const shiftBtn = document.querySelector("#shift");
+const keysHint = document.querySelector(".keys-hint");
 
-let state = initialState();
-if (isPro()) state = { ...state, expr: idleExpr(true) };
+let mode = "basic";
+let second = false;
+let basicState = initialState();
+let sciState = initialSciState();
+if (isPro()) {
+  basicState = { ...basicState, expr: idleExpr(true) };
+  sciState = { ...sciState, expr: "Pro Math · degrees" };
+}
+let state = basicState;
 let pendingGate = null;
 let paying = false;
 let payToken = 0;
@@ -87,9 +100,12 @@ function setPro(on) {
     /* The in-memory class still unlocks the tab if storage is blocked. */
   }
   document.documentElement.classList.toggle("is-pro", on);
+  if (mode === "sci") sciState = state;
+  else basicState = state;
   if (!on) {
-    const result = reduce(state, { type: "downgrade" }, false);
-    state = result.state;
+    basicState = reduce(basicState, { type: "downgrade" }, false).state;
+    sciState = sciReduce(sciState, { type: "downgrade" }, false).state;
+    state = mode === "sci" ? sciState : basicState;
   }
   render();
 }
@@ -98,8 +114,32 @@ function render() {
   const pro = isPro();
   displayEl.textContent = state.display;
   exprEl.textContent = state.expr;
-  clearBtn.textContent = clearLabel(state);
+  clearBtn.textContent = mode === "sci" ? sciClearLabel(state) : clearLabel(state);
   pill.textContent = pro ? "Pro Math" : "Free tier";
+  device.classList.toggle("is-sci", mode === "sci");
+  modelEl.textContent = mode === "sci" ? "SM-99" : "FM-00";
+  document.querySelector("#mode-basic").setAttribute("aria-selected", mode === "basic" ? "true" : "false");
+  document.querySelector("#mode-sci").setAttribute("aria-selected", mode === "sci" ? "true" : "false");
+  keysHint.textContent = mode === "sci"
+    ? "Scientific keys are on the panel. Keyboard adds ( ) ! e p. Addition stays free."
+    : "Keys too: 0–9, + − * / % ^, Enter, Backspace, Esc.";
+  shiftBtn.setAttribute("aria-pressed", second ? "true" : "false");
+  if (mode === "sci") {
+    angleBtn.textContent = state.angle === "rad" ? "Rad" : "Deg";
+    angleBtn.setAttribute("aria-pressed", state.angle === "rad" ? "true" : "false");
+  }
+  for (const button of sciPad.querySelectorAll("[data-label]")) {
+    const label = second && button.dataset.label2 ? button.dataset.label2 : button.dataset.label;
+    const textNodes = [...button.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE);
+    textNodes.forEach((node, index) => {
+      node.nodeValue = index === textNodes.length - 1 ? label : "";
+    });
+    const fn = second && button.dataset.fn2 ? button.dataset.fn2 : button.dataset.fn;
+    const meta = SCI_FUNCS[fn] || SCI_CONSTS[button.dataset.const] || { label: button.dataset.paren === "(" || button.dataset.paren === ")" ? "Parentheses" : label };
+    const locked = !pro;
+    button.setAttribute("aria-label", locked ? `${meta.label}, locked` : meta.label);
+    button.title = locked ? "Included with Pro Math" : "";
+  }
   document.querySelector("#due-price").textContent = PRICE;
   if (!paying) subscribeBtn.textContent = `Pay ${PRICE}`;
   signBtn.setAttribute("aria-label", pro ? "Toggle sign" : "Toggle sign, locked");
@@ -130,14 +170,48 @@ function fitDisplay() {
 }
 
 function dispatch(event) {
-  const result = reduce(state, event, isPro());
+  const result = mode === "sci" ? sciReduce(state, event, isPro()) : reduce(state, event, isPro());
   state = result.state;
+  if (mode === "sci") sciState = state;
+  else basicState = state;
   render();
   if (result.paywall) {
     pendingGate = event;
     openPaywall(result.paywall);
     shake();
   }
+}
+
+function switchMode(next) {
+  if (next === mode) return;
+  const shown = state.display;
+  const carry = shown !== "Nope" && Number.isFinite(Number(shown)) ? shown : "0";
+  if (mode === "sci") sciState = state;
+  else basicState = state;
+  mode = next;
+  second = false;
+  if (mode === "sci") {
+    const angle = sciState.angle || "deg";
+    sciState = {
+      ...initialSciState(),
+      angle,
+      entry: carry,
+      display: carry,
+      freshResult: carry !== "0",
+      tokens: carry !== "0" ? [{ type: "num", value: Number(carry) }] : [],
+      expr: isPro() ? `Pro Math · ${angle === "deg" ? "degrees" : "radians"}` : `Scientific · ${angle === "deg" ? "degrees" : "radians"}`,
+    };
+    state = sciState;
+  } else {
+    basicState = {
+      ...initialState(),
+      display: carry,
+      overwrite: true,
+      expr: idleExpr(isPro()),
+    };
+    state = basicState;
+  }
+  render();
 }
 
 function shake() {
@@ -156,6 +230,13 @@ function eventFromButton(button) {
   if (kind === "percent") return { type: "percent" };
   if (kind === "sign") return { type: "sign" };
   if (kind === "backspace") return { type: "backspace" };
+  if (kind === "fn") {
+    const fn = second && button.dataset.fn2 ? button.dataset.fn2 : button.dataset.fn;
+    return { type: "fn", fn };
+  }
+  if (kind === "const") return { type: "const", name: button.dataset.const };
+  if (kind === "paren") return { type: "paren", paren: button.dataset.paren };
+  if (kind === "angle") return { type: "angle" };
   return null;
 }
 
@@ -170,25 +251,34 @@ function buttonFor(event) {
   if (event.type === "op") return pad.querySelector(`[data-op="${CSS.escape(event.op)}"]`);
   if (event.type === "sign") return signBtn;
   if (event.type === "backspace") return document.querySelector("#backspace");
+  if (event.type === "fn") return sciPad.querySelector(`[data-fn="${event.fn}"]`) || sciPad.querySelector(`[data-fn2="${event.fn}"]`);
+  if (event.type === "const") return sciPad.querySelector(`[data-const="${event.name}"]`);
+  if (event.type === "paren") return sciPad.querySelector(`[data-paren="${event.paren}"]`);
+  if (event.type === "angle") return angleBtn;
   return document.querySelector(`[data-event="${event.type}"]`);
 }
 
-pad.addEventListener("click", (event) => {
+device.addEventListener("click", (event) => {
   const button = event.target.closest("button");
-  if (!button) return;
+  if (!button || button.id === "plan-pill") return;
+  if (button.id === "mode-basic") {
+    switchMode("basic");
+    return;
+  }
+  if (button.id === "mode-sci") {
+    switchMode("sci");
+    return;
+  }
+  if (button.dataset.event === "shift") {
+    second = !second;
+    render();
+    return;
+  }
   const next = eventFromButton(button);
   if (!next) return;
+  if (second && button.dataset.fn2) second = false;
   button.blur();
   dispatch(next);
-});
-
-signBtn.addEventListener("click", () => {
-  signBtn.blur();
-  dispatch({ type: "sign" });
-});
-
-document.querySelector("#backspace").addEventListener("click", () => {
-  dispatch({ type: "backspace" });
 });
 
 window.addEventListener("keydown", (event) => {
@@ -209,6 +299,10 @@ window.addEventListener("keydown", (event) => {
   else if (key === "Enter" || key === "=") next = { type: "equals" };
   else if (key === "Backspace" || key === "Delete") next = { type: "backspace" };
   else if (key === "Escape" || key === "c" || key === "C") next = { type: "clear" };
+  else if (mode === "sci" && (key === "(" || key === ")")) next = { type: "paren", paren: key };
+  else if (mode === "sci" && key === "!") next = { type: "fn", fn: "fact" };
+  else if (mode === "sci" && (key === "e" || key === "E")) next = { type: "const", name: "e" };
+  else if (mode === "sci" && (key === "p" || key === "P")) next = { type: "const", name: "pi" };
   else return;
 
   if (event.repeat && next.type !== "digit" && next.type !== "backspace") return;
@@ -230,7 +324,13 @@ function openPaywall(info) {
   subscribeBtn.disabled = false;
   statusEl.textContent = "";
   showView("pitch");
-  const pitch = PITCHES[info.op] || PITCHES.general;
+  const pitch = PITCHES[info.op] || (info.label
+    ? {
+      title: `${info.label} is Pro Math`,
+      copy: `${info.label} sits on the scientific panel. Pro Math is ${PRICE}, and addition on the basic keys stays free.`,
+      symbol: info.op,
+    }
+    : PITCHES.general);
   titleEl.textContent = pitch.title;
   copyEl.textContent = pitch.copy;
   symbolEl.textContent = info.op || pitch.symbol || "∞";
@@ -245,7 +345,7 @@ function openManage() {
   showView("manage");
   titleEl.textContent = "Pro Math is active";
   copyEl.textContent =
-    "This tab can subtract, multiply, divide, take percents, and raise powers. Downgrade anytime and the free tier returns.";
+    "This tab can subtract, multiply, divide, take percents, raise powers, and use the scientific keys. Downgrade anytime and the free tier returns.";
   symbolEl.textContent = "★";
   dialog.showModal();
   keepBtn.focus();
@@ -303,7 +403,7 @@ subscribeBtn.addEventListener("click", async () => {
     "PLUSONLY REGISTER",
     "------------------------",
     "ITEM      Pro Math",
-    "OPS       − × ÷ % ^ ±",
+    "OPS       − × ÷ % ^ ± sci",
     `TOTAL     ${PRICE}`,
     "STATUS    APPROVED",
     `TIME      ${when}`,

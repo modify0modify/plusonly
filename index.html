@@ -31,10 +31,11 @@
         <p class="lede">
           PlusOnly is a working calculator with one house rule. The plus key does its job.
           Every other operation requires Pro Math, a $999.99 subscription for this tab.
+          Switch to Scientific for sine, logs, roots, factorial, and parentheses.
         </p>
         <ul class="legend">
           <li><span class="swatch free"></span> Free: digits, decimal, clear, backspace, +, =</li>
-          <li><span class="swatch locked"></span> Pro Math: − × ÷ % ^ and negative numbers</li>
+          <li><span class="swatch locked"></span> Pro Math: − × ÷ % ^ ±, and every scientific key</li>
         </ul>
         <p class="keys-hint">Keys too: 0–9, + − * / % ^, Enter, Backspace, Esc.</p>
         </div>
@@ -44,7 +45,7 @@
         <div class="device-top">
           <div class="brand-block">
             <span class="brand">PlusOnly</span>
-            <span class="model">FM-00</span>
+            <span class="model" id="model">FM-00</span>
           </div>
           <button type="button" class="plan-pill" id="plan-pill">Free tier</button>
         </div>
@@ -56,6 +57,11 @@
         <div class="leds" aria-hidden="true">
           <span class="led on"><i></i> + live</span>
           <span class="led pro-led"><i></i> pro</span>
+        </div>
+
+        <div class="modes" role="tablist" aria-label="Calculator mode">
+          <button type="button" class="mode-btn" id="mode-basic" role="tab" aria-selected="true">Basic</button>
+          <button type="button" class="mode-btn" id="mode-sci" role="tab" aria-selected="false">Scientific</button>
         </div>
 
         <div class="screen">
@@ -72,6 +78,52 @@
             </div>
           </div>
           <output id="display" class="display" aria-live="polite">0</output>
+        </div>
+
+        <div class="sci-pad" id="sci-pad">
+          <button type="button" class="key sci shift" id="shift" data-event="shift" aria-pressed="false">2nd</button>
+          <button type="button" class="key sci" data-event="fn" data-fn="sin" data-fn2="asin" data-label="sin" data-label2="sin⁻¹">
+            <span class="lock" aria-hidden="true"></span>sin
+          </button>
+          <button type="button" class="key sci" data-event="fn" data-fn="cos" data-fn2="acos" data-label="cos" data-label2="cos⁻¹">
+            <span class="lock" aria-hidden="true"></span>cos
+          </button>
+          <button type="button" class="key sci" data-event="fn" data-fn="tan" data-fn2="atan" data-label="tan" data-label2="tan⁻¹">
+            <span class="lock" aria-hidden="true"></span>tan
+          </button>
+          <button type="button" class="key sci angle" id="angle" data-event="angle" aria-pressed="false">Deg</button>
+
+          <button type="button" class="key sci" data-event="fn" data-fn="ln" data-fn2="exp" data-label="ln" data-label2="eˣ">
+            <span class="lock" aria-hidden="true"></span>ln
+          </button>
+          <button type="button" class="key sci" data-event="fn" data-fn="log" data-fn2="pow10" data-label="log" data-label2="10ˣ">
+            <span class="lock" aria-hidden="true"></span>log
+          </button>
+          <button type="button" class="key sci" data-event="fn" data-fn="sqrt" data-fn2="cbrt" data-label="√" data-label2="∛">
+            <span class="lock" aria-hidden="true"></span>√
+          </button>
+          <button type="button" class="key sci" data-event="fn" data-fn="sqr" data-label="x²">
+            <span class="lock" aria-hidden="true"></span>x²
+          </button>
+          <button type="button" class="key sci" data-event="fn" data-fn="fact" data-label="n!">
+            <span class="lock" aria-hidden="true"></span>n!
+          </button>
+
+          <button type="button" class="key sci" data-event="const" data-const="pi" data-label="π">
+            <span class="lock" aria-hidden="true"></span>π
+          </button>
+          <button type="button" class="key sci" data-event="const" data-const="e" data-label="e">
+            <span class="lock" aria-hidden="true"></span>e
+          </button>
+          <button type="button" class="key sci" data-event="fn" data-fn="recip" data-label="1/x">
+            <span class="lock" aria-hidden="true"></span>1/x
+          </button>
+          <button type="button" class="key sci" data-event="paren" data-paren="(" data-label="(">
+            <span class="lock" aria-hidden="true"></span>(
+          </button>
+          <button type="button" class="key sci" data-event="paren" data-paren=")" data-label=")">
+            <span class="lock" aria-hidden="true"></span>)
+          </button>
         </div>
 
         <div class="pad" id="pad">

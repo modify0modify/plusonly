@@ -5,6 +5,7 @@ import {
   initialState,
   reduce,
 } from "../src/calc.js";
+import { initialSciState, sciReduce } from "../src/scientific.js";
 
 let failed = 0;
 
@@ -159,6 +160,96 @@ eq(original.display, "0", "reduce does not mutate the previous state");
 eq(formatValue(0.1 + 0.2), "0.3", "formatValue tidies binary fractions");
 eq(applyOp(3, "×", 4).value, 12, "applyOp multiplies");
 eq(clearLabel({ ...initialState(), overwrite: false, display: "12", error: null }), "C", "mid-entry clear label is C");
+
+function pressWith(reducer, state, events, pro = false) {
+  let paywall = null;
+  for (const event of events) {
+    const result = reducer(state, event, pro);
+    state = result.state;
+    paywall = result.paywall;
+  }
+  return { state, paywall };
+}
+
+function sciPress(events, pro = false) {
+  return pressWith(sciReduce, initialSciState(), events, pro);
+}
+
+const sciAdd = sciPress([...digits("12"), { type: "op", op: "+" }, ...digits("34"), { type: "equals" }]);
+eq(sciAdd.state.display, "46", "scientific mode still adds for free");
+eq(sciAdd.paywall, null, "scientific addition does not paywall");
+
+const sciLocked = sciPress([...digits("90"), { type: "fn", fn: "sin" }]);
+eq(sciLocked.paywall?.label, "Sine", "sine is locked");
+eq(sciLocked.state.display, "90", "sine does not change the number");
+
+const sciSin = sciPress([...digits("90"), { type: "fn", fn: "sin" }], true);
+eq(sciSin.state.display, "1", "sin(90°) = 1");
+
+const sciPrefix = sciPress(
+  [{ type: "fn", fn: "sin" }, ...digits("30"), { type: "paren", paren: ")" }, { type: "equals" }],
+  true,
+);
+eq(sciPrefix.state.display, "0.5", "sin(30°) = 0.5");
+
+const sciPrec = sciPress(
+  [{ type: "digit", digit: "2" }, { type: "op", op: "+" }, { type: "digit", digit: "3" }, { type: "op", op: "×" }, { type: "digit", digit: "4" }, { type: "equals" }],
+  true,
+);
+eq(sciPrec.state.display, "14", "scientific mode uses precedence");
+
+const sciGroup = sciPress(
+  [
+    { type: "paren", paren: "(" },
+    { type: "digit", digit: "2" },
+    { type: "op", op: "+" },
+    { type: "digit", digit: "3" },
+    { type: "paren", paren: ")" },
+    { type: "op", op: "×" },
+    { type: "digit", digit: "4" },
+    { type: "equals" },
+  ],
+  true,
+);
+eq(sciGroup.state.display, "20", "(2 + 3) × 4 = 20");
+
+const sciSqrt = sciPress([...digits("9"), { type: "fn", fn: "sqrt" }], true);
+eq(sciSqrt.state.display, "3", "√9 = 3");
+
+const sciLog = sciPress([...digits("100"), { type: "fn", fn: "log" }], true);
+eq(sciLog.state.display, "2", "log(100) = 2");
+
+const sciLn = sciPress([{ type: "const", name: "e" }, { type: "fn", fn: "ln" }], true);
+eq(sciLn.state.display, "1", "ln(e) = 1");
+
+const sciFact = sciPress([...digits("5"), { type: "fn", fn: "fact" }], true);
+eq(sciFact.state.display, "120", "5! = 120");
+
+const sciSquare = sciPress([...digits("12"), { type: "fn", fn: "sqr" }], true);
+eq(sciSquare.state.display, "144", "12² = 144");
+
+const sciRecip = sciPress([...digits("4"), { type: "fn", fn: "recip" }], true);
+eq(sciRecip.state.display, "0.25", "1/4 = 0.25");
+
+const sciPow = sciPress(
+  [{ type: "digit", digit: "2" }, { type: "op", op: "^" }, { type: "digit", digit: "3" }, { type: "op", op: "^" }, { type: "digit", digit: "2" }, { type: "equals" }],
+  true,
+);
+eq(sciPow.state.display, "512", "2 ^ 3 ^ 2 = 512");
+
+const sciRad = sciPress(
+  [{ type: "angle" }, { type: "const", name: "pi" }, { type: "op", op: "÷" }, { type: "digit", digit: "2" }, { type: "equals" }, { type: "fn", fn: "sin" }],
+  true,
+);
+eq(sciRad.state.display, "1", "sin(π/2 radians) = 1");
+
+const sciBadRoot = sciPress([{ type: "digit", digit: "4" }, { type: "sign" }, { type: "fn", fn: "sqrt" }], true);
+eq(sciBadRoot.state.display, "Nope", "negative square root is refused");
+
+const sciPi = sciPress([{ type: "const", name: "pi" }]);
+eq(sciPi.paywall?.label, "Pi", "pi is locked");
+
+eq(initialSciState().angle, "deg", "scientific mode starts in degrees");
 
 if (failed > 0) {
   console.error(`\n${failed} check(s) failed`);

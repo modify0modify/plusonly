@@ -17,10 +17,11 @@ This is a Vite app, so the dev server is the way to run it. Opening `index.html`
 
 1. Type `12 + 7` and press `=`. That works immediately.
 2. Press `−`, `×`, `÷`, `%`, `^`, or `±`. A paywall explains Pro Math.
-3. Press **Pay $999.99**, then **Do the other math**. The operation you asked for runs, and the locks stay off until you close the tab.
-4. The **Pro Math** pill can downgrade you back to addition.
+3. Press **Scientific** for sine, cosine, tangent, log, roots, factorial, π, e, and parentheses. Those keys are Pro Math too. **2nd** flips sin to sin⁻¹, log to 10ˣ, and √ to ∛. **Deg** switches between degrees and radians.
+4. Press **Pay $999.99**, then **Do the other math**. The operation you asked for runs, and the locks stay off until you close the tab.
+5. The **Pro Math** pill can downgrade you back to addition.
 
-Keyboard: `0–9`, `+ − * / % ^`, `Enter`, `Backspace`, `Esc`.
+Keyboard: `0–9`, `+ − * / % ^`, `Enter`, `Backspace`, `Esc`. In scientific mode, `( ) ! e p` also work.
 
 ## Checks
 

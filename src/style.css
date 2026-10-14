@@ -276,6 +276,65 @@ h1 {
   user-select: text;
 }
 
+.modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0 8px 10px;
+}
+
+.mode-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(246, 241, 232, 0.72);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mode-btn:focus-visible,
+.sci-pad .key:focus-visible {
+  outline: 3px solid #ffd18a;
+  outline-offset: 2px;
+}
+
+.mode-btn[aria-selected="true"] {
+  background: #f4efe6;
+  color: #1c1915;
+}
+
+.sci-pad {
+  display: none;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.device.is-sci {
+  width: min(100%, 420px);
+}
+
+.device.is-sci .sci-pad { display: grid; }
+.device.is-sci .pad { gap: 8px; }
+.device.is-sci .pad .key { height: 56px; }
+
+.sci-pad .key {
+  height: 46px;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  background: #343c34;
+  color: #e7f2df;
+}
+
+.sci-pad .shift[aria-pressed="true"],
+.sci-pad .angle[aria-pressed="true"] {
+  background: #f2c14e;
+  color: #1c1915;
+}
+
 .pad {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -562,6 +621,12 @@ dialog[open] .sheet { animation: pop 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
   .key { height: 58px; }
   .pad { gap: 8px; }
   .screen { min-height: 104px; }
+
+  .device.is-sci .key { height: 48px; }
+  .device.is-sci .pad .key { height: 46px; }
+  .device.is-sci .sci-pad { gap: 6px; margin-bottom: 6px; }
+  .device.is-sci .sci-pad .key { height: 40px; font-size: 0.86rem; }
+  .device.is-sci .screen { min-height: 96px; }
 }
 
 @media (max-width: 380px) {
