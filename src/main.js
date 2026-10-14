@@ -66,6 +66,58 @@ const PITCHES = {
     title: "Negativity is premium",
     copy: "Positive numbers are included. Crossing below zero takes Pro Math and a brief attitude adjustment.",
   },
+  sin: {
+    title: "Sine is a members-only wave",
+    copy: "The free tier draws straight lines. A curve is this key, and cosine is not invited.",
+  },
+  cos: {
+    title: "Cosine requires a co-signer",
+    copy: "Sine will not introduce you. This neighbor keeps its own handshake.",
+  },
+  tan: {
+    title: "Tangent bills by the slope",
+    copy: "It climbs until it refuses. That drama is not included with sine or cosine.",
+  },
+  ln: {
+    title: "Natural log is small-batch",
+    copy: "Base e, priced like it. The 2nd shift eˣ comes with this key and nothing else.",
+  },
+  log: {
+    title: "The logbook is under lock",
+    copy: "Base ten, premium binding. 10ˣ is printed in the same volume.",
+  },
+  sqrt: {
+    title: "Roots cost extra to excavate",
+    copy: "Something is under that number. This key digs it out, cube root included.",
+  },
+  sqr: {
+    title: "Squaring needs a permit",
+    copy: "Multiplying a number by itself is a renovation, not a discount on the times key.",
+  },
+  fact: {
+    title: "Factorial sends an itemized bill",
+    copy: "One, then two, then everything before it, then one very long receipt.",
+  },
+  pi: {
+    title: "Pi runs long. So does the bill.",
+    copy: "Endless digits, one key. Euler's number is still waiting outside.",
+  },
+  e: {
+    title: "e is on a private guest list",
+    copy: "The growth constant has a door policy. Pi cannot get you in.",
+  },
+  recip: {
+    title: "Flipping a number is a courtesy fee",
+    copy: "Turn it upside down. Division remains a different purchase.",
+  },
+  "(": {
+    title: "The open parenthesis holds the door",
+    copy: "Groups need a doorman. The closing parenthesis sells its own ticket.",
+  },
+  ")": {
+    title: "The close parenthesis keeps the cover",
+    copy: "Every group still needs its own exit. This key shuts only what you bought.",
+  },
   general: {
     title: "The rest of the buttons",
     copy: `Each locked key is its own ${PRICE} purchase. Press the one you want. Addition stays free.`,
@@ -195,8 +247,9 @@ function render() {
     const meta = SCI_FUNCS[fn] || SCI_CONSTS[button.dataset.const] || { label: KEY_LABELS[button.dataset.purchase] || label };
     const locked = !owned.has(button.dataset.purchase);
     button.classList.toggle("is-owned", !locked);
-    button.setAttribute("aria-label", locked ? `${meta.label}, ${PRICE}` : meta.label);
-    button.title = locked ? `${PRICE} for this key` : "";
+    const upgrade = PITCHES[button.dataset.purchase];
+    button.setAttribute("aria-label", locked ? `${upgrade?.title || meta.label}, ${PRICE}` : meta.label);
+    button.title = locked ? upgrade?.title || `${PRICE} for this key` : "";
   }
   document.querySelector("#due-price").textContent = PRICE;
   if (!paying) subscribeBtn.textContent = `Pay ${PRICE}`;
@@ -378,7 +431,7 @@ function openPaywall(info) {
   statusEl.textContent = "";
   showView("pitch");
   offer = { id: info.id, label: info.label || KEY_LABELS[info.id] || info.op, symbol: info.op };
-  const pitch = PITCHES[info.op] || (info.label
+  const pitch = PITCHES[info.id] || PITCHES[info.op] || (info.label
     ? {
       title: `${offer.label} is ${PRICE}`,
       copy: `${offer.label} is sold on its own. The other locked keys stay locked.`,
