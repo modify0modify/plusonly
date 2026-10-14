@@ -1,6 +1,6 @@
 # PlusOnly
 
-A calculator where **addition is free** and every other operation is locked behind Pro Math at **$999.99**. Paying unlocks the rest of the keys for this browser tab.
+A calculator where **addition is free** and every other key is its own **$999.99** purchase. Buying one key leaves the rest locked. Purchases last for this browser tab.
 
 ## Run it
 
@@ -16,10 +16,9 @@ This is a Vite app, so the dev server is the way to run it. Opening `index.html`
 ## What to try
 
 1. Type `12 + 7` and press `=`. That works immediately.
-2. Press `−`, `×`, `÷`, `%`, `^`, or `±`. A paywall explains Pro Math.
-3. Press **Scientific** for sine, cosine, tangent, log, roots, factorial, π, e, and parentheses. Those keys are Pro Math too. **2nd** flips sin to sin⁻¹, log to 10ˣ, and √ to ∛. **Deg** switches between degrees and radians.
-4. Press **Pay $999.99**, then **Do the other math**. The operation you asked for runs, and the locks stay off until you close the tab.
-5. The **Pro Math** pill can downgrade you back to addition.
+2. Press `−`, `×`, `÷`, `%`, `^`, or `±`. Each one asks for its own $999.99 purchase.
+3. Press **Scientific** for sine, cosine, tangent, log, roots, factorial, π, e, and parentheses. Each of those keys is a separate purchase too. **2nd** flips sin to sin⁻¹, log to 10ˣ, and √ to ∛, and that shifted function comes with the same key.
+4. Press **Pay $999.99**, then **Do the other math**. Only the key you bought unlocks. The pill lists the keys you own, and you can return them one at a time.
 
 Keyboard: `0–9`, `+ − * / % ^`, `Enter`, `Backspace`, `Esc`. In scientific mode, `( ) ! e p` also work.
 
@@ -29,4 +28,4 @@ Keyboard: `0–9`, `+ − * / % ^`, `Enter`, `Backspace`, `Esc`. In scientific m
 npm test
 ```
 
-That runs the calculator rules (free addition, locked operations, and the unlocked arithmetic) without a browser.
+That runs the calculator rules without a browser: free addition, a locked key, and a purchase that unlocks only that key.

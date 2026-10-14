@@ -145,11 +145,8 @@ const stillFree = press(afterLock.state, [
 eq(stillFree.state.display, "10", "addition still works after a locked key");
 eq(stillFree.paywall, null, "the plus key stays free");
 
-const downgraded = press(
-  initialState(),
-  [...digits("6"), { type: "op", op: "×" }, { type: "downgrade" }],
-  true,
-);
+const staged = press(initialState(), [...digits("6"), { type: "op", op: "×" }], true);
+const downgraded = press(staged.state, [{ type: "downgrade" }], false);
 eq(downgraded.state.pendingOp, null, "downgrade clears a premium operator");
 eq(downgraded.state.display, "6", "downgrade keeps the number on screen");
 
@@ -250,6 +247,26 @@ const sciPi = sciPress([{ type: "const", name: "pi" }]);
 eq(sciPi.paywall?.label, "Pi", "pi is locked");
 
 eq(initialSciState().angle, "deg", "scientific mode starts in degrees");
+
+const onlyMinus = (id) => id === "−";
+const minusOnly = press(
+  initialState(),
+  [...digits("9"), { type: "op", op: "−" }, { type: "digit", digit: "1" }, { type: "equals" }],
+  onlyMinus,
+);
+eq(minusOnly.state.display, "8", "owning subtraction unlocks only subtraction");
+eq(minusOnly.paywall, null, "owned subtraction does not paywall");
+const stillTimes = press(minusOnly.state, [{ type: "op", op: "×" }], onlyMinus);
+eq(stillTimes.paywall?.id, "×", "multiplication stays locked after buying subtraction");
+
+const onlySin = (id) => id === "sin";
+const sineOnly = sciPress([...digits("90"), { type: "fn", fn: "sin" }], onlySin);
+eq(sineOnly.state.display, "1", "owning the sine key unlocks sine");
+const inverse = sciPress([{ type: "digit", digit: "1" }, { type: "fn", fn: "asin" }], onlySin);
+eq(inverse.state.display, "90", "the sine key's 2nd function is included");
+const rootLocked = sciPress([...digits("9"), { type: "fn", fn: "sqrt" }], onlySin);
+eq(rootLocked.paywall?.id, "sqrt", "square root is a separate purchase");
+eq(rootLocked.state.display, "9", "an unbought key leaves the number alone");
 
 if (failed > 0) {
   console.error(`\n${failed} check(s) failed`);

@@ -6,15 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="PlusOnly is a calculator where addition is free and every other operation requires Pro Math for $999.99."
+      content="PlusOnly is a calculator where addition is free and every other key is its own $999.99 purchase."
     />
     <meta name="theme-color" content="#e7d3b4" />
     <title>PlusOnly — addition is free</title>
     <script>
       try {
-        if (sessionStorage.getItem("plusonly-pro") === "1") {
-          document.documentElement.classList.add("is-pro");
-        }
+        const raw = sessionStorage.getItem("plusonly-owned");
+        const list = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(list) && list.length) document.documentElement.classList.add("has-purchases");
       } catch (err) {
         /* sessionStorage can throw in locked-down browsers; the free tier still works. */
       }
@@ -30,12 +30,12 @@
         <div class="intro-rest">
         <p class="lede">
           PlusOnly is a working calculator with one house rule. The plus key does its job.
-          Every other operation requires Pro Math, a $999.99 subscription for this tab.
+          Every other key is its own $999.99 purchase. Buying sine does not unlock square root.
           Switch to Scientific for sine, logs, roots, factorial, and parentheses.
         </p>
         <ul class="legend">
           <li><span class="swatch free"></span> Free: digits, decimal, clear, backspace, +, =</li>
-          <li><span class="swatch locked"></span> Pro Math: − × ÷ % ^ ±, and every scientific key</li>
+          <li><span class="swatch locked"></span> Sold separately: − × ÷ % ^ ±, and every scientific key</li>
         </ul>
         <p class="keys-hint">Keys too: 0–9, + − * / % ^, Enter, Backspace, Esc.</p>
         </div>
@@ -68,7 +68,7 @@
           <div class="screen-meta">
             <p id="expr" class="expr">Addition is free</p>
             <div class="screen-actions">
-              <button type="button" class="mini" id="sign" data-event="sign" aria-label="Toggle sign, locked">
+              <button type="button" class="mini" id="sign" data-event="sign" data-purchase="±" aria-label="Toggle sign, locked">
                 <span class="lock" aria-hidden="true"></span>
                 ±
               </button>
@@ -82,73 +82,73 @@
 
         <div class="sci-pad" id="sci-pad">
           <button type="button" class="key sci shift" id="shift" data-event="shift" aria-pressed="false">2nd</button>
-          <button type="button" class="key sci" data-event="fn" data-fn="sin" data-fn2="asin" data-label="sin" data-label2="sin⁻¹">
+          <button type="button" class="key sci" data-event="fn" data-fn="sin" data-fn2="asin" data-purchase="sin" data-label="sin" data-label2="sin⁻¹">
             <span class="lock" aria-hidden="true"></span>sin
           </button>
-          <button type="button" class="key sci" data-event="fn" data-fn="cos" data-fn2="acos" data-label="cos" data-label2="cos⁻¹">
+          <button type="button" class="key sci" data-event="fn" data-fn="cos" data-fn2="acos" data-purchase="cos" data-label="cos" data-label2="cos⁻¹">
             <span class="lock" aria-hidden="true"></span>cos
           </button>
-          <button type="button" class="key sci" data-event="fn" data-fn="tan" data-fn2="atan" data-label="tan" data-label2="tan⁻¹">
+          <button type="button" class="key sci" data-event="fn" data-fn="tan" data-fn2="atan" data-purchase="tan" data-label="tan" data-label2="tan⁻¹">
             <span class="lock" aria-hidden="true"></span>tan
           </button>
           <button type="button" class="key sci angle" id="angle" data-event="angle" aria-pressed="false">Deg</button>
 
-          <button type="button" class="key sci" data-event="fn" data-fn="ln" data-fn2="exp" data-label="ln" data-label2="eˣ">
+          <button type="button" class="key sci" data-event="fn" data-fn="ln" data-fn2="exp" data-purchase="ln" data-label="ln" data-label2="eˣ">
             <span class="lock" aria-hidden="true"></span>ln
           </button>
-          <button type="button" class="key sci" data-event="fn" data-fn="log" data-fn2="pow10" data-label="log" data-label2="10ˣ">
+          <button type="button" class="key sci" data-event="fn" data-fn="log" data-fn2="pow10" data-purchase="log" data-label="log" data-label2="10ˣ">
             <span class="lock" aria-hidden="true"></span>log
           </button>
-          <button type="button" class="key sci" data-event="fn" data-fn="sqrt" data-fn2="cbrt" data-label="√" data-label2="∛">
+          <button type="button" class="key sci" data-event="fn" data-fn="sqrt" data-fn2="cbrt" data-purchase="sqrt" data-label="√" data-label2="∛">
             <span class="lock" aria-hidden="true"></span>√
           </button>
-          <button type="button" class="key sci" data-event="fn" data-fn="sqr" data-label="x²">
+          <button type="button" class="key sci" data-event="fn" data-fn="sqr" data-purchase="sqr" data-label="x²">
             <span class="lock" aria-hidden="true"></span>x²
           </button>
-          <button type="button" class="key sci" data-event="fn" data-fn="fact" data-label="n!">
+          <button type="button" class="key sci" data-event="fn" data-fn="fact" data-purchase="fact" data-label="n!">
             <span class="lock" aria-hidden="true"></span>n!
           </button>
 
-          <button type="button" class="key sci" data-event="const" data-const="pi" data-label="π">
+          <button type="button" class="key sci" data-event="const" data-const="pi" data-purchase="pi" data-label="π">
             <span class="lock" aria-hidden="true"></span>π
           </button>
-          <button type="button" class="key sci" data-event="const" data-const="e" data-label="e">
+          <button type="button" class="key sci" data-event="const" data-const="e" data-purchase="e" data-label="e">
             <span class="lock" aria-hidden="true"></span>e
           </button>
-          <button type="button" class="key sci" data-event="fn" data-fn="recip" data-label="1/x">
+          <button type="button" class="key sci" data-event="fn" data-fn="recip" data-purchase="recip" data-label="1/x">
             <span class="lock" aria-hidden="true"></span>1/x
           </button>
-          <button type="button" class="key sci" data-event="paren" data-paren="(" data-label="(">
+          <button type="button" class="key sci" data-event="paren" data-paren="(" data-purchase="(" data-label="(">
             <span class="lock" aria-hidden="true"></span>(
           </button>
-          <button type="button" class="key sci" data-event="paren" data-paren=")" data-label=")">
+          <button type="button" class="key sci" data-event="paren" data-paren=")" data-purchase=")" data-label=")">
             <span class="lock" aria-hidden="true"></span>)
           </button>
         </div>
 
         <div class="pad" id="pad">
           <button type="button" class="key util" data-event="clear" id="clear">AC</button>
-          <button type="button" class="key op" data-event="op" data-op="^" aria-label="Exponent, locked">
+          <button type="button" class="key op" data-event="op" data-op="^" data-purchase="^" aria-label="Exponent, locked">
             <span class="lock" aria-hidden="true"></span>^
           </button>
-          <button type="button" class="key op" data-event="percent" aria-label="Percent, locked">
+          <button type="button" class="key op" data-event="percent" data-purchase="%" aria-label="Percent, locked">
             <span class="lock" aria-hidden="true"></span>%
           </button>
-          <button type="button" class="key op" data-event="op" data-op="÷" aria-label="Divide, locked">
+          <button type="button" class="key op" data-event="op" data-op="÷" data-purchase="÷" aria-label="Divide, locked">
             <span class="lock" aria-hidden="true"></span>÷
           </button>
 
           <button type="button" class="key" data-event="digit" data-digit="7">7</button>
           <button type="button" class="key" data-event="digit" data-digit="8">8</button>
           <button type="button" class="key" data-event="digit" data-digit="9">9</button>
-          <button type="button" class="key op" data-event="op" data-op="×" aria-label="Multiply, locked">
+          <button type="button" class="key op" data-event="op" data-op="×" data-purchase="×" aria-label="Multiply, locked">
             <span class="lock" aria-hidden="true"></span>×
           </button>
 
           <button type="button" class="key" data-event="digit" data-digit="4">4</button>
           <button type="button" class="key" data-event="digit" data-digit="5">5</button>
           <button type="button" class="key" data-event="digit" data-digit="6">6</button>
-          <button type="button" class="key op" data-event="op" data-op="−" aria-label="Subtract, locked">
+          <button type="button" class="key op" data-event="op" data-op="−" data-purchase="−" aria-label="Subtract, locked">
             <span class="lock" aria-hidden="true"></span>−
           </button>
 
@@ -176,10 +176,10 @@
         <div id="view-pitch">
           <ul class="compare">
             <li><span>Addition</span><b>Included</b></li>
-            <li><span id="locked-feature">This button</span><b>Pro Math</b></li>
+            <li><span id="locked-feature">This button</span><b>Sold alone</b></li>
             <li><span>Due today</span><b id="due-price">$999.99</b></li>
           </ul>
-          <p class="fine">Pro Math is $999.99 and unlocks every locked operation in this tab.</p>
+          <p class="fine" id="fine">Each locked key is its own $999.99 purchase.</p>
           <button type="button" class="pay-primary" id="subscribe">Pay $999.99</button>
           <button type="button" class="pay-quiet" id="dismiss">I'll keep adding</button>
           <p id="pay-status" class="status" aria-live="polite"></p>
@@ -191,8 +191,9 @@
         </div>
 
         <div id="view-manage" hidden>
-          <button type="button" class="pay-primary" id="keep-pro">Keep Pro Math</button>
-          <button type="button" class="pay-quiet" id="downgrade">Downgrade to addition</button>
+          <ul class="owned-list" id="owned-list"></ul>
+          <button type="button" class="pay-primary" id="keep-pro">Close</button>
+          <button type="button" class="pay-quiet" id="downgrade">Return every key</button>
         </div>
       </div>
     </dialog>

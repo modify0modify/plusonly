@@ -73,8 +73,15 @@ export function clearLabel(state) {
   return "AC";
 }
 
-export function idleExpr(pro) {
-  return pro ? "Pro Math · this tab only" : "Addition is free";
+export function allows(access, id) {
+  if (access === true) return true;
+  if (typeof access === "function") return Boolean(access(id));
+  if (access && typeof access.has === "function") return access.has(id);
+  return false;
+}
+
+export function idleExpr(access) {
+  return access === true ? "Pro Math · this tab only" : "Addition is free";
 }
 
 function withExpr(state, pro) {
@@ -120,17 +127,17 @@ export function reduce(state, event, pro = false) {
   if (type === "op") {
     const meta = OPS[event.op];
     if (!meta) return finish({ ...state }, pro);
-    if (meta.pro && !pro) {
-      return gate(state, { kind: "op", op: event.op, label: meta.label });
+    if (meta.pro && !allows(pro, event.op)) {
+      return gate(state, { kind: "op", id: event.op, op: event.op, label: meta.label });
     }
   }
 
-  if (type === "percent" && !pro) {
-    return gate(state, PREMIUM["%"]);
+  if (type === "percent" && !allows(pro, "%")) {
+    return gate(state, { ...PREMIUM["%"], id: "%" });
   }
 
-  if (type === "sign" && !pro) {
-    return gate(state, PREMIUM["±"]);
+  if (type === "sign" && !allows(pro, "±")) {
+    return gate(state, { ...PREMIUM["±"], id: "±" });
   }
 
   const s = { ...state };
@@ -213,8 +220,8 @@ export function reduce(state, event, pro = false) {
   if (type === "equals") {
     if (!s.pendingOp) return finish(s, pro);
     const meta = OPS[s.pendingOp];
-    if (meta?.pro && !pro) {
-      return gate(state, { kind: "op", op: s.pendingOp, label: meta.label });
+    if (meta?.pro && !allows(pro, s.pendingOp)) {
+      return gate(state, { kind: "op", id: s.pendingOp, op: s.pendingOp, label: meta.label });
     }
     const current = Number(s.display);
     const left = s.accumulator;
@@ -253,11 +260,11 @@ export function reduce(state, event, pro = false) {
   }
 
   if (type === "downgrade") {
-    if (s.pendingOp && OPS[s.pendingOp]?.pro) {
+    if (s.pendingOp && OPS[s.pendingOp]?.pro && !allows(pro, s.pendingOp)) {
       s.pendingOp = null;
       s.showResultExpr = false;
     }
-    return finish(s, false);
+    return finish(s, pro);
   }
 
   return finish(s, pro);

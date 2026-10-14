@@ -171,7 +171,7 @@ h1 {
 
 .plan-pill:hover { background: rgba(255, 255, 255, 0.16); }
 
-.is-pro .plan-pill {
+.has-purchases .plan-pill {
   background: #f2c14e;
   color: #1c1915;
 }
@@ -214,8 +214,8 @@ h1 {
 .led.on { color: #d7f5c4; }
 .led.on i { background: #b6f27a; box-shadow: 0 0 8px #b6f27a; }
 
-.is-pro .pro-led { color: #ffe3a3; }
-.is-pro .pro-led i { background: var(--lock); box-shadow: 0 0 8px var(--lock); }
+.has-purchases .pro-led { color: #ffe3a3; }
+.has-purchases .pro-led i { background: var(--lock); box-shadow: 0 0 8px var(--lock); }
 
 .screen {
   margin: 0 0 14px;
@@ -388,8 +388,8 @@ h1 {
   text-transform: uppercase;
 }
 
-.is-pro .free-tag,
-.is-pro .lock { display: none; }
+.key.is-owned .lock,
+.mini.is-owned .lock { display: none; }
 
 .equals {
   background: var(--eq);
@@ -499,6 +499,28 @@ dialog::backdrop {
   padding: 9px 0;
   border-bottom: 1px dashed rgba(28, 25, 21, 0.25);
   font-size: 0.95rem;
+}
+
+.owned-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+}
+
+.owned-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(28, 25, 21, 0.25);
+}
+
+.owned-list button {
+  border: 0;
+  background: transparent;
+  color: #8a4b12;
+  font-weight: 700;
 }
 
 .fine,

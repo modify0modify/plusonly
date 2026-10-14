@@ -7,8 +7,39 @@ import "@fontsource/ibm-plex-mono/500.css";
 import { clearLabel, idleExpr, initialState, OPS, reduce } from "./calc.js";
 import { initialSciState, SCI_CONSTS, SCI_FUNCS, sciClearLabel, sciReduce } from "./scientific.js";
 
-const PRO_KEY = "plusonly-pro";
+const OWNED_KEY = "plusonly-owned";
 const PRICE = "$999.99";
+
+const KEY_LABELS = {
+  "−": "Subtraction",
+  "×": "Multiplication",
+  "÷": "Division",
+  "^": "Exponent",
+  "%": "Percent",
+  "±": "Negative numbers",
+  sin: "Sine",
+  cos: "Cosine",
+  tan: "Tangent",
+  ln: "Natural log",
+  log: "Logarithm",
+  sqrt: "Square root",
+  sqr: "Square",
+  fact: "Factorial",
+  recip: "Reciprocal",
+  pi: "Pi",
+  e: "Euler's number",
+  "(": "Open parenthesis",
+  ")": "Close parenthesis",
+};
+
+const SHIFT_NOTE = {
+  sin: "sin⁻¹",
+  cos: "cos⁻¹",
+  tan: "tan⁻¹",
+  ln: "eˣ",
+  log: "10ˣ",
+  sqrt: "∛",
+};
 
 const PITCHES = {
   "−": {
@@ -37,7 +68,7 @@ const PITCHES = {
   },
   general: {
     title: "The rest of the buttons",
-    copy: `Plus is included. Minus, times, divide, percent, powers, negative numbers, and the scientific keys are Pro Math, for ${PRICE}.`,
+    copy: `Each locked key is its own ${PRICE} purchase. Press the one you want. Addition stays free.`,
     symbol: "∞",
   },
 };
@@ -75,47 +106,73 @@ let mode = "basic";
 let second = false;
 let basicState = initialState();
 let sciState = initialSciState();
-if (isPro()) {
-  basicState = { ...basicState, expr: idleExpr(true) };
-  sciState = { ...sciState, expr: "Pro Math · degrees" };
-}
 let state = basicState;
 let pendingGate = null;
+let offer = null;
 let paying = false;
 let payToken = 0;
 
-function isPro() {
+function loadOwned() {
   try {
-    return sessionStorage.getItem(PRO_KEY) === "1";
+    const raw = sessionStorage.getItem(OWNED_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(list) ? list : []);
   } catch {
-    return document.documentElement.classList.contains("is-pro");
+    return new Set();
   }
 }
 
-function setPro(on) {
+let owned = loadOwned();
+
+function access(id) {
+  return owned.has(id);
+}
+
+function rememberOwned() {
   try {
-    if (on) sessionStorage.setItem(PRO_KEY, "1");
-    else sessionStorage.removeItem(PRO_KEY);
+    sessionStorage.setItem(OWNED_KEY, JSON.stringify([...owned]));
   } catch {
-    /* The in-memory class still unlocks the tab if storage is blocked. */
+    /* The in-memory set still tracks purchases if storage is blocked. */
   }
-  document.documentElement.classList.toggle("is-pro", on);
+  document.documentElement.classList.toggle("has-purchases", owned.size > 0);
+}
+
+function syncActive() {
   if (mode === "sci") sciState = state;
   else basicState = state;
-  if (!on) {
-    basicState = reduce(basicState, { type: "downgrade" }, false).state;
-    sciState = sciReduce(sciState, { type: "downgrade" }, false).state;
-    state = mode === "sci" ? sciState : basicState;
-  }
+}
+
+function applyAccess() {
+  syncActive();
+  basicState = reduce(basicState, { type: "downgrade" }, access).state;
+  sciState = sciReduce(sciState, { type: "downgrade" }, access).state;
+  state = mode === "sci" ? sciState : basicState;
   render();
 }
 
+function grant(id) {
+  if (id) owned.add(id);
+  rememberOwned();
+  render();
+}
+
+function revoke(id) {
+  owned.delete(id);
+  rememberOwned();
+  applyAccess();
+}
+
+function revokeAll() {
+  owned.clear();
+  rememberOwned();
+  applyAccess();
+}
+
 function render() {
-  const pro = isPro();
   displayEl.textContent = state.display;
   exprEl.textContent = state.expr;
   clearBtn.textContent = mode === "sci" ? sciClearLabel(state) : clearLabel(state);
-  pill.textContent = pro ? "Pro Math" : "Free tier";
+  pill.textContent = owned.size === 0 ? "Free tier" : owned.size === 1 ? "1 key" : `${owned.size} keys`;
   device.classList.toggle("is-sci", mode === "sci");
   modelEl.textContent = mode === "sci" ? "SM-99" : "FM-00";
   document.querySelector("#mode-basic").setAttribute("aria-selected", mode === "basic" ? "true" : "false");
@@ -135,27 +192,23 @@ function render() {
       node.nodeValue = index === textNodes.length - 1 ? label : "";
     });
     const fn = second && button.dataset.fn2 ? button.dataset.fn2 : button.dataset.fn;
-    const meta = SCI_FUNCS[fn] || SCI_CONSTS[button.dataset.const] || { label: button.dataset.paren === "(" || button.dataset.paren === ")" ? "Parentheses" : label };
-    const locked = !pro;
-    button.setAttribute("aria-label", locked ? `${meta.label}, locked` : meta.label);
-    button.title = locked ? "Included with Pro Math" : "";
+    const meta = SCI_FUNCS[fn] || SCI_CONSTS[button.dataset.const] || { label: KEY_LABELS[button.dataset.purchase] || label };
+    const locked = !owned.has(button.dataset.purchase);
+    button.classList.toggle("is-owned", !locked);
+    button.setAttribute("aria-label", locked ? `${meta.label}, ${PRICE}` : meta.label);
+    button.title = locked ? `${PRICE} for this key` : "";
   }
   document.querySelector("#due-price").textContent = PRICE;
   if (!paying) subscribeBtn.textContent = `Pay ${PRICE}`;
-  signBtn.setAttribute("aria-label", pro ? "Toggle sign" : "Toggle sign, locked");
-  signBtn.title = pro ? "" : "Included with Pro Math";
-
-  for (const button of pad.querySelectorAll("[data-op]")) {
-    const op = button.dataset.op;
-    const label = OPS[op]?.label ?? op;
-    const locked = Boolean(OPS[op]?.pro) && !pro;
-    button.setAttribute("aria-label", locked ? `${label}, locked` : label);
-    button.title = locked ? "Included with Pro Math" : "";
+  for (const button of device.querySelectorAll("[data-purchase]")) {
+    const id = button.dataset.purchase;
+    const unlocked = owned.has(id);
+    button.classList.toggle("is-owned", unlocked);
+    if (button.closest("#sci-pad")) continue;
+    const label = OPS[id]?.label || KEY_LABELS[id] || id;
+    button.setAttribute("aria-label", unlocked ? label : `${label}, ${PRICE}`);
+    button.title = unlocked ? "" : `${PRICE} for this key`;
   }
-
-  const percent = pad.querySelector('[data-event="percent"]');
-  percent.setAttribute("aria-label", pro ? "Percent" : "Percent, locked");
-  percent.title = pro ? "" : "Included with Pro Math";
   fitDisplay();
 }
 
@@ -170,7 +223,7 @@ function fitDisplay() {
 }
 
 function dispatch(event) {
-  const result = mode === "sci" ? sciReduce(state, event, isPro()) : reduce(state, event, isPro());
+  const result = mode === "sci" ? sciReduce(state, event, access) : reduce(state, event, access);
   state = result.state;
   if (mode === "sci") sciState = state;
   else basicState = state;
@@ -199,7 +252,7 @@ function switchMode(next) {
       display: carry,
       freshResult: carry !== "0",
       tokens: carry !== "0" ? [{ type: "num", value: Number(carry) }] : [],
-      expr: isPro() ? `Pro Math · ${angle === "deg" ? "degrees" : "radians"}` : `Scientific · ${angle === "deg" ? "degrees" : "radians"}`,
+      expr: `Scientific · ${angle === "deg" ? "degrees" : "radians"}`,
     };
     state = sciState;
   } else {
@@ -207,7 +260,7 @@ function switchMode(next) {
       ...initialState(),
       display: carry,
       overwrite: true,
-      expr: idleExpr(isPro()),
+      expr: idleExpr(false),
     };
     state = basicState;
   }
@@ -324,41 +377,59 @@ function openPaywall(info) {
   subscribeBtn.disabled = false;
   statusEl.textContent = "";
   showView("pitch");
+  offer = { id: info.id, label: info.label || KEY_LABELS[info.id] || info.op, symbol: info.op };
   const pitch = PITCHES[info.op] || (info.label
     ? {
-      title: `${info.label} is Pro Math`,
-      copy: `${info.label} sits on the scientific panel. Pro Math is ${PRICE}, and addition on the basic keys stays free.`,
+      title: `${offer.label} is ${PRICE}`,
+      copy: `${offer.label} is sold on its own. The other locked keys stay locked.`,
       symbol: info.op,
     }
     : PITCHES.general);
   titleEl.textContent = pitch.title;
   copyEl.textContent = pitch.copy;
+  const shift = SHIFT_NOTE[info.id];
+  document.querySelector("#fine").textContent = shift
+    ? `This ${PRICE} purchase unlocks only this key, including its 2nd function ${shift}. Every other key is a separate purchase.`
+    : `This ${PRICE} purchase unlocks only this key. Every other locked key is a separate purchase.`;
   symbolEl.textContent = info.op || pitch.symbol || "∞";
-  featureEl.textContent = info.label || "This button";
+  featureEl.textContent = offer.label || "This key";
   dialog.showModal();
   subscribeBtn.focus();
+}
+
+function fillOwnedList() {
+  const list = document.querySelector("#owned-list");
+  list.replaceChildren();
+  for (const id of owned) {
+    const item = document.createElement("li");
+    const name = document.createElement("span");
+    name.textContent = KEY_LABELS[id] || id;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.return = id;
+    button.textContent = "Return key";
+    item.append(name, button);
+    list.append(item);
+  }
+  downgradeBtn.hidden = owned.size === 0;
 }
 
 function openManage() {
   if (dialog.open) return;
   pendingGate = null;
+  offer = null;
   showView("manage");
-  titleEl.textContent = "Pro Math is active";
-  copyEl.textContent =
-    "This tab can subtract, multiply, divide, take percents, raise powers, and use the scientific keys. Downgrade anytime and the free tier returns.";
-  symbolEl.textContent = "★";
+  titleEl.textContent = owned.size ? "Keys you bought" : "One key, one purchase";
+  copyEl.textContent = owned.size
+    ? "Each key was its own purchase. Return one, or return all of them."
+    : `Every locked button is ${PRICE} by itself. Press a key to buy that key. Addition stays free.`;
+  symbolEl.textContent = owned.size ? "★" : "∞";
+  fillOwnedList();
   dialog.showModal();
   keepBtn.focus();
 }
 
-pill.addEventListener("click", () => {
-  if (isPro()) openManage();
-  else {
-    pendingGate = null;
-    openPaywall({ kind: "general", op: "", label: "Every other operation" });
-    symbolEl.textContent = "∞";
-  }
-});
+pill.addEventListener("click", openManage);
 
 function wait(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -391,36 +462,34 @@ subscribeBtn.addEventListener("click", async () => {
   statusEl.textContent = "Authorizing payment…";
   await wait(550);
   if (token !== payToken || !dialog.open) return;
-  setPro(true);
+  const bought = offer;
+  grant(bought?.id);
   paying = false;
   burst();
   showView("receipt");
   titleEl.textContent = "Payment approved";
-  copyEl.textContent = "Pro Math is unlocked in this tab.";
+  copyEl.textContent = `${bought?.label || "That key"} is unlocked in this tab. The other locked keys are still for sale.`;
   symbolEl.textContent = "✓";
   const when = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   receiptBody.textContent = [
     "PLUSONLY REGISTER",
     "------------------------",
-    "ITEM      Pro Math",
-    "OPS       − × ÷ % ^ ± sci",
+    `ITEM      ${bought?.label || "Key"}`,
+    `KEY       ${bought?.symbol || bought?.id || ""}`,
     `TOTAL     ${PRICE}`,
     "STATUS    APPROVED",
     `TIME      ${when}`,
     "------------------------",
-    "Thank you for subscribing.",
+    "One key. One purchase.",
   ].join("\n");
   receiptClose.focus();
 });
 
 function releaseGate() {
-  if (pendingGate && isPro()) {
-    const event = pendingGate;
-    pendingGate = null;
-    dispatch(event);
-  } else {
-    pendingGate = null;
-  }
+  if (!pendingGate) return;
+  const event = pendingGate;
+  pendingGate = null;
+  dispatch(event);
 }
 
 // Defer the close so this click cannot land on the calculator once the dialog is gone.
@@ -438,8 +507,20 @@ dismissBtn.addEventListener("click", () => {
 keepBtn.addEventListener("click", closeDialog);
 downgradeBtn.addEventListener("click", () => {
   pendingGate = null;
-  setPro(false);
+  offer = null;
+  revokeAll();
   closeDialog();
+});
+
+document.querySelector("#owned-list").addEventListener("click", (event) => {
+  const id = event.target.closest("[data-return]")?.dataset.return;
+  if (!id) return;
+  revoke(id);
+  titleEl.textContent = owned.size ? "Keys you bought" : "One key, one purchase";
+  copyEl.textContent = owned.size
+    ? "Each key was its own purchase. Return one, or return all of them."
+    : `Every locked button is ${PRICE} by itself. Press a key to buy that key. Addition stays free.`;
+  fillOwnedList();
 });
 
 dialog.addEventListener("cancel", (event) => {
@@ -464,4 +545,5 @@ dialog.addEventListener("click", (event) => {
 });
 
 window.addEventListener("resize", fitDisplay);
+rememberOwned();
 render();

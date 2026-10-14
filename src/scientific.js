@@ -1,4 +1,4 @@
-import { applyOp, formatValue } from "./calc.js";
+import { allows, applyOp, formatValue } from "./calc.js";
 
 export const SCI_FUNCS = {
   sin: { label: "Sine", symbol: "sin" },
@@ -24,6 +24,24 @@ export const SCI_CONSTS = {
 };
 
 const TRIG = new Set(["sin", "cos", "tan", "asin", "acos", "atan"]);
+
+const BUTTON_ID = {
+  sin: "sin",
+  asin: "sin",
+  cos: "cos",
+  acos: "cos",
+  tan: "tan",
+  atan: "tan",
+  ln: "ln",
+  exp: "ln",
+  log: "log",
+  pow10: "log",
+  sqrt: "sqrt",
+  cbrt: "sqrt",
+  sqr: "sqr",
+  fact: "fact",
+  recip: "recip",
+};
 
 export function initialSciState() {
   return {
@@ -152,9 +170,9 @@ function angleLabel(angle) {
   return angle === "deg" ? "degrees" : "radians";
 }
 
-function idle(pro, angle) {
+function idle(access, angle) {
   const unit = angleLabel(angle);
-  return pro ? `Pro Math · ${unit}` : `Scientific · ${unit}`;
+  return access === true ? `Pro Math · ${unit}` : `Scientific · ${unit}`;
 }
 
 function finishSci(state, pro) {
@@ -209,14 +227,6 @@ function describeFn(fn, value, angle) {
   }
 }
 
-function premiumIn(tokens) {
-  return tokens.some((token) => {
-    if (token.type === "num") return false;
-    if (token.type === "op") return token.op !== "+";
-    return true;
-  });
-}
-
 function last(tokens) {
   return tokens[tokens.length - 1];
 }
@@ -224,10 +234,20 @@ function last(tokens) {
 function implyMultiply(state, pro) {
   const prev = last(state.tokens);
   if (!prev || (prev.type !== "num" && prev.type !== "rparen")) return null;
-  if (!pro) return gate(state, { kind: "op", op: "×", label: "Multiplication" });
+  if (!allows(pro, "×")) return "block";
   state.tokens.push({ type: "op", op: "×" });
   return null;
 }
+
+function purchaseIdForToken(token) {
+  if (token.type === "op" && token.op !== "+") return token.op;
+  if (token.type === "fn") return BUTTON_ID[token.fn] || token.fn;
+  if (token.type === "lparen") return "(";
+  if (token.type === "rparen") return ")";
+  return null;
+}
+
+const TIMES_WALL = { kind: "op", id: "×", op: "×", label: "Multiplication" };
 
 function evaluate(tokens, angle) {
   let index = 0;
@@ -375,18 +395,23 @@ export function sciReduce(state, event, pro = false) {
   if (type === "fn" && !SCI_FUNCS[event.fn]) return finishSci(s, pro);
   if (type === "const" && !SCI_CONSTS[event.name]) return finishSci(s, pro);
 
-  if (type === "op" && event.op !== "+" && !pro) {
-    return gate(state, { kind: "op", op: event.op, label: event.op === "−" ? "Subtraction" : event.op === "×" ? "Multiplication" : event.op === "÷" ? "Division" : "Exponent" });
+  if (type === "op" && event.op !== "+" && !allows(pro, event.op)) {
+    const labels = { "−": "Subtraction", "×": "Multiplication", "÷": "Division", "^": "Exponent" };
+    return gate(state, { kind: "op", id: event.op, op: event.op, label: labels[event.op] || event.op });
   }
-  if (type === "percent" && !pro) return gate(state, { kind: "percent", op: "%", label: "Percent" });
-  if (type === "sign" && !pro) return gate(state, { kind: "sign", op: "±", label: "Negative numbers" });
-  if ((type === "fn" || type === "const" || type === "paren") && !pro) {
-    const info = type === "fn"
-      ? { kind: "fn", op: SCI_FUNCS[event.fn].symbol, label: SCI_FUNCS[event.fn].label }
-      : type === "const"
-        ? { kind: "const", op: SCI_CONSTS[event.name].symbol, label: SCI_CONSTS[event.name].label }
-        : { kind: "paren", op: event.paren, label: "Parentheses" };
-    return gate(state, info);
+  if (type === "percent" && !allows(pro, "%")) return gate(state, { kind: "percent", id: "%", op: "%", label: "Percent" });
+  if (type === "sign" && !allows(pro, "±")) return gate(state, { kind: "sign", id: "±", op: "±", label: "Negative numbers" });
+  if (type === "fn" && !allows(pro, BUTTON_ID[event.fn] || event.fn)) {
+    const id = BUTTON_ID[event.fn] || event.fn;
+    const meta = SCI_FUNCS[id] || SCI_FUNCS[event.fn];
+    return gate(state, { kind: "fn", id, op: meta.symbol, label: meta.label });
+  }
+  if (type === "const" && !allows(pro, event.name)) {
+    const meta = SCI_CONSTS[event.name];
+    return gate(state, { kind: "const", id: event.name, op: meta.symbol, label: meta.label });
+  }
+  if (type === "paren" && !allows(pro, event.paren)) {
+    return gate(state, { kind: "paren", id: event.paren, op: event.paren, label: event.paren === "(" ? "Open parenthesis" : "Close parenthesis" });
   }
 
   if (s.error && !["digit", "dot", "clear", "backspace"].includes(type)) return finishSci(s, pro);
@@ -408,7 +433,7 @@ export function sciReduce(state, event, pro = false) {
     s.holdExpr = false;
     if (!s.entering) {
       const implied = implyMultiply(s, pro);
-      if (implied) return implied;
+      if (implied === "block") return gate(state, TIMES_WALL);
       s.entry = s.entry === "-0" ? `-${event.digit}` : event.digit;
       s.entering = true;
       return finishSci(s, pro);
@@ -431,7 +456,7 @@ export function sciReduce(state, event, pro = false) {
     s.holdExpr = false;
     if (!s.entering) {
       const implied = implyMultiply(s, pro);
-      if (implied) return implied;
+      if (implied === "block") return gate(state, TIMES_WALL);
       s.entry = "0.";
       s.entering = true;
       return finishSci(s, pro);
@@ -500,7 +525,7 @@ export function sciReduce(state, event, pro = false) {
     s.holdExpr = false;
     if (s.entering) commitEntry(s);
     const implied = implyMultiply(s, pro);
-    if (implied) return implied;
+    if (implied === "block") return gate(state, TIMES_WALL);
     s.tokens.push({ type: "fn", fn: event.fn });
     s.tokens.push({ type: "lparen" });
     s.entry = "0";
@@ -518,7 +543,7 @@ export function sciReduce(state, event, pro = false) {
     }
     if (s.entering) commitEntry(s);
     const implied = implyMultiply(s, pro);
-    if (implied) return implied;
+    if (implied === "block") return gate(state, TIMES_WALL);
     s.tokens.push({ type: "num", value: constant.value });
     s.entry = formatValue(constant.value);
     s.entering = false;
@@ -531,7 +556,7 @@ export function sciReduce(state, event, pro = false) {
       if (s.freshResult) s.freshResult = false;
       if (s.entering) commitEntry(s);
       const implied = implyMultiply(s, pro);
-      if (implied) return implied;
+      if (implied === "block") return gate(state, TIMES_WALL);
       s.tokens.push({ type: "lparen" });
       s.entry = "0";
       s.entering = false;
@@ -555,10 +580,11 @@ export function sciReduce(state, event, pro = false) {
       tokens.push({ type: "rparen" });
       open -= 1;
     }
-    if (!pro && premiumIn(tokens)) {
-      const token = tokens.find((item) => item.type !== "num" && !(item.type === "op" && item.op === "+"));
-      const op = token?.op || token?.fn || "(";
-      return gate(state, { kind: "op", op, label: "Scientific" });
+    const blocked = tokens.map(purchaseIdForToken).find((id) => id && !allows(pro, id));
+    if (blocked) {
+      const labels = { "−": "Subtraction", "×": "Multiplication", "÷": "Division", "^": "Exponent", "%": "Percent", "(": "Open parenthesis", ")": "Close parenthesis" };
+      const meta = SCI_FUNCS[blocked];
+      return gate(state, { kind: "op", id: blocked, op: meta?.symbol || blocked, label: meta?.label || labels[blocked] || blocked });
     }
     const result = evaluate(tokens, s.angle);
     if (result.error) return fail(s, result.error);
@@ -602,14 +628,17 @@ export function sciReduce(state, event, pro = false) {
   }
 
   if (type === "downgrade") {
-    if (premiumIn(s.tokens)) {
+    if (s.tokens.some((token) => {
+      const id = purchaseIdForToken(token);
+      return id && !allows(pro, id);
+    })) {
       const n = Number(s.entry);
       s.tokens = Number.isFinite(n) ? [{ type: "num", value: n }] : [];
       s.entering = false;
       s.freshResult = true;
       s.holdExpr = false;
     }
-    return finishSci(s, false);
+    return finishSci(s, pro);
   }
 
   return finishSci(s, pro);
