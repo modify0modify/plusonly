@@ -1,3 +1,4 @@
+import "./style.css";
 import "@fontsource/outfit/400.css";
 import "@fontsource/outfit/600.css";
 import "@fontsource/outfit/700.css";
@@ -321,16 +322,23 @@ function releaseGate() {
   }
 }
 
-receiptClose.addEventListener("click", () => dialog.close());
+// Defer the close so this click cannot land on the calculator once the dialog is gone.
+function closeDialog() {
+  window.setTimeout(() => {
+    if (dialog.open) dialog.close();
+  }, 0);
+}
+
+receiptClose.addEventListener("click", closeDialog);
 dismissBtn.addEventListener("click", () => {
   pendingGate = null;
-  dialog.close();
+  closeDialog();
 });
-keepBtn.addEventListener("click", () => dialog.close());
+keepBtn.addEventListener("click", closeDialog);
 downgradeBtn.addEventListener("click", () => {
   pendingGate = null;
   setPro(false);
-  dialog.close();
+  closeDialog();
 });
 
 dialog.addEventListener("cancel", (event) => {
@@ -350,7 +358,7 @@ dialog.addEventListener("close", () => {
 dialog.addEventListener("click", (event) => {
   if (event.target === dialog && !paying) {
     pendingGate = null;
-    dialog.close();
+    closeDialog();
   }
 });
 
